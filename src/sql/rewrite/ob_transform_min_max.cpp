@@ -119,13 +119,43 @@ int ObTransformMinMax::check_transform_validity(ObTransformerCtx &ctx,
 
 int ObTransformMinMax::do_transform(ObSelectStmt *select_stmt)
 {
+  // int ret = OB_SUCCESS;
+  // if (OB_ISNULL(select_stmt)) {
+  //   ret = OB_INVALID_ARGUMENT;
+  //   LOG_WARN("params have null", K(ret), K(select_stmt));
+  // } else if (OB_FAIL(do_minmax_transform(select_stmt))) {
+  //   LOG_WARN("failed to transform minmax", K(ret));
+  // }
   int ret = OB_SUCCESS;
+  trans_happened = false;
+  // ObSelectStmt *select_stmt = static_cast<ObSelectStmt*>(stmt);
+  ObSEArray<ObRawExpr*, 4> subquery_exprs;
+  
   if (OB_ISNULL(select_stmt)) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("params have null", K(ret), K(select_stmt));
-  } else if (OB_FAIL(do_minmax_transform(select_stmt))) {
-    LOG_WARN("failed to transform minmax", K(ret));
+    ret = OB_ERR_UNEXPECTED;
+    LOG_WARN("select stmt is null", K(ret));
+  } else {
+    for (int64_t i = 0; OB_SUCC(ret) && i < select_stmt->get_agg_items().count(); ++i) {
+      ObAggFunRawExpr *agg_expr = select_stmt->get_agg_items().at(i);
+      if (OB_FAIL(do_minmax_transform(select_stmt, agg_expr, subquery_exprs))) {
+        LOG_WARN("failed to transform min/max", K(ret));
+      } else {
+        trans_happened = true;
+      }
+    }
+    if (OB_SUCC(ret) && trans_happened) {
+      // Replace the original select list with the subqueries
+      select_stmt->get_select_items().reset();
+      for (int64_t i = 0; OB_SUCC(ret) && i < subquery_exprs.count(); ++i) {
+        ObSelectStmt::SelectItem select_item;
+        select_item.expr_ = subquery_exprs.at(i);
+        if (OB_FAIL(select_stmt->add_select_item(select_item))) {
+          LOG_WARN("failed to add select item", K(ret));
+        }
+      }
+    }
   }
+  // return ret;
   return ret;
 }
 
