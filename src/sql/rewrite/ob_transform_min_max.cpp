@@ -119,13 +119,13 @@ int ObTransformMinMax::check_transform_validity(ObTransformerCtx &ctx,
 
 int ObTransformMinMax::do_transform(ObSelectStmt *select_stmt)
 {
-  // int ret = OB_SUCCESS;
-  // if (OB_ISNULL(select_stmt)) {
-  //   ret = OB_INVALID_ARGUMENT;
-  //   LOG_WARN("params have null", K(ret), K(select_stmt));
-  // } else if (OB_FAIL(do_minmax_transform(select_stmt))) {
-  //   LOG_WARN("failed to transform minmax", K(ret));
-  // }
+  int ret = OB_SUCCESS;
+  if (OB_ISNULL(select_stmt)) {
+    ret = OB_INVALID_ARGUMENT;
+    LOG_WARN("params have null", K(ret), K(select_stmt));
+  } else if (OB_FAIL(do_minmax_transform(select_stmt))) {
+    LOG_WARN("failed to transform minmax", K(ret));
+  }
   int ret = OB_SUCCESS;
   trans_happened = false;
   // ObSelectStmt *select_stmt = static_cast<ObSelectStmt*>(stmt);
